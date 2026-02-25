@@ -182,3 +182,38 @@ async def generate(input: GenerateFnInput) -> GenerateFnOutput:
 
     return GenerateFnOutput(samples=sample)
 
+
+# ---------------------------------------------------------------------------
+# Optional factory for programmatic configuration
+# ---------------------------------------------------------------------------
+
+def create_rollout_fn(
+    custom_prompt_fn: Callable[[Sample, int], str | list[dict]] | None = None,
+):
+    """Return a configured ``generate`` coroutine.
+
+    Use this when you want to wire ``custom_prompt_fn`` in Python rather than
+    setting ``CUSTOM_SYSTEM_PROMPT`` via the environment.
+
+    Example
+    -------
+    In your launch script or a thin wrapper module::
+
+        import custom.spec_rollout as sr
+        from my_project.prompts import my_prompt_fn
+
+        rollout_fn = sr.create_rollout_fn(custom_prompt_fn=my_prompt_fn)
+        # then pass  --rollout-function-path my_wrapper.rollout_fn
+
+    Parameters
+    ----------
+    custom_prompt_fn:
+        Callable ``(sample, rollout_id) -> prompt``.  If *None* the global
+        ``CUSTOM_PROMPT_FN`` is left unchanged (falls back to env var).
+    """
+    import custom.spec_rollout as _self  # local import avoids circular refs
+
+    if custom_prompt_fn is not None:
+        _self.CUSTOM_PROMPT_FN = custom_prompt_fn
+
+    return generate
