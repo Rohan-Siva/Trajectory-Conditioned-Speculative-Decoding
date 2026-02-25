@@ -39,3 +39,42 @@ from miles.utils.http_utils import post
 from miles.utils.types import Sample
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Configurable prompt hook
+# ---------------------------------------------------------------------------
+
+# Override this at import time to provide fully dynamic prompt logic.
+# Signature: (sample: Sample, rollout_id: int) -> str | list[dict]
+CUSTOM_PROMPT_FN: Callable[[Sample, int], str | list[dict]] | None = None
+
+
+def _build_prompt(
+    sample: Sample,
+    rollout_id: int,
+    system_prompt: str | None,
+) -> str | list[dict]:
+    """Return a (possibly modified) prompt for this sample.
+
+    Priority order:
+      1. ``CUSTOM_PROMPT_FN`` if set — full control.
+      2. ``system_prompt`` string — prepended as a system message when the
+         prompt is already in chat-dict format, or prepended as plain text.
+      3. Original ``sample.prompt`` unchanged.
+    """
+    if CUSTOM_PROMPT_FN is not None:
+        return CUSTOM_PROMPT_FN(sample, rollout_id)
+
+    prompt = sample.prompt
+
+    if system_prompt:
+        if isinstance(prompt, list):
+            # Chat-format: insert system message at the front if absent
+            if not prompt or prompt[0].get("role") != "system":
+                prompt = [{"role": "system", "content": system_prompt}] + prompt
+        else:
+            # Plain-string format: simple prefix
+            prompt = f"{system_prompt}\n\n{prompt}"
+
+    return prompt
+
