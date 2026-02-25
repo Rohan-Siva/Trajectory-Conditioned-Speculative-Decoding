@@ -78,3 +78,35 @@ def _build_prompt(
 
     return prompt
 
+
+# ---------------------------------------------------------------------------
+# Speculative-decoding logging helper
+# ---------------------------------------------------------------------------
+
+def _log_spec_info(sample: Sample, rollout_id: int) -> None:
+    """Log draft-acceptance metrics for a single completed sample.
+
+    This fires only when speculative decoding is active (i.e. the sample's
+    ``spec_info`` contains non-zero draft token counts).  The stats are:
+
+    * ``spec_accept_rate``  — fraction of draft tokens accepted by the verifier.
+    * ``spec_accept_length``  — average accepted tokens per verification step.
+
+    These mirror the fields already tracked in ``Sample.SpecInfo`` so that
+    users can spot drift without waiting for the aggregated rollout log.
+    """
+    info = sample.spec_info
+    if info.spec_draft_token_num == 0:
+        return  # speculative decoding not active for this sample
+
+    logger.debug(
+        "rollout=%d sample=%s | spec_accept_rate=%.3f spec_accept_length=%.2f"
+        " drafted=%d accepted=%d verifications=%d",
+        rollout_id,
+        sample.index,
+        info.spec_accept_rate,
+        info.spec_accept_length,
+        info.spec_draft_token_num,
+        info.spec_accept_token_num,
+        info.spec_verify_ct,
+    )
