@@ -21,3 +21,21 @@ To inject a custom system prompt set the environment variable::
 Or supply a ``custom_prompt_fn`` by subclassing / monkey-patching
 ``CUSTOM_PROMPT_FN`` at import time before the rollout workers start.
 """
+
+from __future__ import annotations
+
+import logging
+import os
+from copy import deepcopy
+from typing import Callable
+
+from miles.rollout.base_types import GenerateFnInput, GenerateFnOutput
+from miles.rollout.generate_utils.generate_endpoint_utils import (
+    compute_prompt_ids_from_sample,
+    compute_request_payload,
+    update_sample_from_response,
+)
+from miles.utils.http_utils import post
+from miles.utils.types import Sample
+
+logger = logging.getLogger(__name__)
