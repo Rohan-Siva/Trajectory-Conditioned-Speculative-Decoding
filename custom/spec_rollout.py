@@ -110,3 +110,75 @@ def _log_spec_info(sample: Sample, rollout_id: int) -> None:
         info.spec_accept_token_num,
         info.spec_verify_ct,
     )
+
+
+# ---------------------------------------------------------------------------
+# Main rollout entry point
+# ---------------------------------------------------------------------------
+
+async def generate(input: GenerateFnInput) -> GenerateFnOutput:
+    """Custom single-turn rollout with prompt injection + spec-decoding logging.
+
+    Drop-in replacement for ``miles.rollout.generate_hub.single_turn.generate``.
+    Pass to the training script via::
+
+        --rollout-function-path custom.spec_rollout.generate
+    """
+    args = input.args
+    sample = input.sample
+    sampling_params = input.sampling_params
+
+    assert sample.status in {Sample.Status.PENDING, Sample.Status.ABORTED}, (
+        f"Unexpected sample status: {sample.status}"
+    )
+
+    # ------------------------------------------------------------------
+    # 1. Inject custom prompt before tokenization
+    # ------------------------------------------------------------------
+    system_prompt = os.environ.get("CUSTOM_SYSTEM_PROMPT", "")
+    original_prompt = sample.prompt
+    sample.prompt = _build_prompt(sample, input.rollout_id, system_prompt or None)
+
+    url = f"http://{args.sglang_router_ip}:{args.sglang_router_port}/generate"
+    prompt_ids = compute_prompt_ids_from_sample(input.state, sample)
+
+    # Restore original prompt so the Sample stored in the buffer reflects
+    # the raw data, not the modified one (prevents double-injection on retry).
+    sample.prompt = original_prompt
+
+    # ------------------------------------------------------------------
+    # 2. Handle partial rollout resumption (same as single_turn.py)
+    # ------------------------------------------------------------------
+    if len(sample.response) > 0:
+        input_ids = sample.tokens
+        sampling_params = deepcopy(sampling_params)
+        sampling_params["max_new_tokens"] -= len(sample.tokens) - len(prompt_ids)
+        if sampling_params["max_new_tokens"] <= 0:
+            sample.status = Sample.Status.TRUNCATED
+            return GenerateFnOutput(samples=sample)
+    else:
+        input_ids = prompt_ids
+
+    # ------------------------------------------------------------------
+    # 3. Build and send the generation request
+    # ------------------------------------------------------------------
+    payload, halt_status = compute_request_payload(
+        args,
+        input_ids=input_ids,
+        sampling_params=sampling_params,
+        multimodal_inputs=sample.multimodal_inputs,
+    )
+    if payload is None:
+        sample.status = halt_status
+        return GenerateFnOutput(samples=sample)
+
+    output = await post(url, payload)
+    await update_sample_from_response(args, sample, payload=payload, output=output)
+
+    # ------------------------------------------------------------------
+    # 4. Log per-sample speculative-decoding acceptance stats
+    # ------------------------------------------------------------------
+    _log_spec_info(sample, input.rollout_id)
+
+    return GenerateFnOutput(samples=sample)
+
