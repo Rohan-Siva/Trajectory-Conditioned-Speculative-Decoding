@@ -5,8 +5,8 @@ set -ex
 # create conda
 yes '' | "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
 export PS1=tmp
-mkdir -p /root/.cargo/
-touch /root/.cargo/env
+mkdir -p ~/.cargo/
+touch ~/.cargo/env
 source ~/.bashrc
 
 micromamba create -n miles python=3.12 pip -c conda-forge -y
@@ -15,7 +15,7 @@ export CUDA_HOME="$CONDA_PREFIX"
 export SGLANG_COMMIT="24c91001cf99ba642be791e099d358f4dfe955f5"
 export MEGATRON_COMMIT="3714d81d418c9f1bca4594fc35f9e8289f652862"
 
-export BASE_DIR=${BASE_DIR:-"/root"}
+export BASE_DIR=${BASE_DIR:-"/home/rs63759/code/spec"}
 cd $BASE_DIR
 
 # install cuda 12.9 as it's the default cuda version for torch
@@ -38,7 +38,7 @@ pip install cmake ninja
 
 # flash attn
 # the newest version megatron supports is v2.7.4.post1
-MAX_JOBS=64 pip -v install flash-attn==2.7.4.post1 --no-build-isolation
+MAX_JOBS=16 pip -v install flash-attn==2.7.4.post1 --no-build-isolation
 
 pip install git+https://github.com/ISEEKYAN/mbridge.git@89eb10887887bc74853f89a4de258c0702932a1c --no-deps
 pip install --no-build-isolation "transformer_engine[pytorch]==2.10.0"
