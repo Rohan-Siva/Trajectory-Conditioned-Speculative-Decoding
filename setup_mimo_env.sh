@@ -52,13 +52,13 @@ echo ""
 echo "=== 3. Downloading Datasets ==="
 if [ ! -f "${BASE_DIR}/data/dapo-math-17k/data/dapo-math-17k.parquet" ]; then
     echo "Downloading DAPO-Math-17k..."
-    huggingface-cli download Skywork/DAPO-Math-17k --repo-type dataset --local-dir "${BASE_DIR}/data/dapo-math-17k"
+    huggingface-cli download BytedTsinghua-SIA/DAPO-Math-17k --repo-type dataset --local-dir "${BASE_DIR}/data/dapo-math-17k"
 fi
 
 if [ ! -f "${BASE_DIR}/data/aime-2024/aime_2024_problems.parquet" ]; then
     echo "Downloading AIME 2024..."
     # Note: adjust the repo name if the original downloaded parquet comes from a different HF source
-    huggingface-cli download opencompmath/AIME_2024 --repo-type dataset --local-dir "${BASE_DIR}/data/aime-2024" || echo "Warn: AIME download failed, assure the parquet is in data/aime-2024/aime_2024_problems.parquet"
+    huggingface-cli download Maxwell-Jia/AIME_2024 --repo-type dataset --local-dir "${BASE_DIR}/data/aime-2024" || echo "Warn: AIME download failed, assure the parquet is in data/aime-2024/aime_2024_problems.parquet"
 fi
 
 echo ""

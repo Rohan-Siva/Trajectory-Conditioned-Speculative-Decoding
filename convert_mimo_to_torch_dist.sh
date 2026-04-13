@@ -4,16 +4,16 @@
 
 set -ex
 
-MILES_PYTHON=/home/rs63759/micromamba/envs/miles/bin/python3.12
-SCRIPT=/home/rs63759/code/spec/Trajectory-Conditioned-Speculative-Decoding/tools/convert_hf_to_torch_dist.py
-MEGATRON=/home/rs63759/code/spec/Megatron-LM
-HF_CKPT=/home/rs63759/code/spec/models/MiMo-7B-RL
-SAVE_DIR=/home/rs63759/code/spec/models/MiMo-7B-RL_torch_dist
+MILES_PYTHON=/home/ubuntu/micromamba/envs/miles/bin/python3.12
+SCRIPT=/home/ubuntu/code/Trajectory-Conditioned-Speculative-Decoding/tools/convert_hf_to_torch_dist.py
+MEGATRON=/home/ubuntu/code/Megatron-LM
+HF_CKPT=/home/ubuntu/code/models/MiMo-7B-RL
+SAVE_DIR=/home/ubuntu/code/models/MiMo-7B-RL_torch_dist
 
 mkdir -p ${SAVE_DIR}
 
 PYTHONPATH=${MEGATRON} \
-/home/rs63759/micromamba/envs/miles/bin/torchrun --nproc_per_node=1 ${SCRIPT} \
+/home/ubuntu/micromamba/envs/miles/bin/torchrun --nproc_per_node=1 ${SCRIPT} \
     --hf-checkpoint ${HF_CKPT} \
     --save ${SAVE_DIR} \
     --swiglu \

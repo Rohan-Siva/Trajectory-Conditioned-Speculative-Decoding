@@ -4,10 +4,11 @@ set -ex
 
 # create conda
 yes '' | "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
-export PS1=tmp
 mkdir -p ~/.cargo/
 touch ~/.cargo/env
-source ~/.bashrc
+export MAMBA_EXE="$HOME/.local/bin/micromamba"
+export MAMBA_ROOT_PREFIX="$HOME/micromamba"
+eval "$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
 
 micromamba create -n miles python=3.12 pip -c conda-forge -y
 micromamba activate miles
@@ -15,7 +16,7 @@ export CUDA_HOME="$CONDA_PREFIX"
 export SGLANG_COMMIT="24c91001cf99ba642be791e099d358f4dfe955f5"
 export MEGATRON_COMMIT="3714d81d418c9f1bca4594fc35f9e8289f652862"
 
-export BASE_DIR=${BASE_DIR:-"/home/rs63759/code/spec"}
+export BASE_DIR=${BASE_DIR:-"/home/ubuntu/code"}
 cd $BASE_DIR
 
 # install cuda 12.9 as it's the default cuda version for torch

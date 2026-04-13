@@ -2,13 +2,16 @@
 #!/bin/bash
 
 # Patched version of run-mimo-7B-rl-eagle.sh for local 4xA6000 setup
-# Model paths: /home/rs63759/code/spec/models/
-# Data paths:  /home/rs63759/code/spec/data/
+# Model paths: /home/ubuntu/code/models/
+# Data paths:  /home/ubuntu/code/data/
 
 # Full paths so this works in screen/tmux without conda activation
-RAY=/home/rs63759/micromamba/envs/miles/bin/ray
-PYTHON=/home/rs63759/micromamba/envs/miles/bin/python3.12
-export PATH=/home/rs63759/micromamba/envs/miles/bin:$PATH
+RAY=/home/ubuntu/micromamba/envs/miles/bin/ray
+PYTHON=/home/ubuntu/micromamba/envs/miles/bin/python3.12
+export PATH=/home/ubuntu/micromamba/envs/miles/bin:$PATH
+
+export RAY_TMPDIR=/opt/dlami/nvme/ray
+mkdir -p $RAY_TMPDIR
 
 # for rerun the task
 pkill -9 sglang
@@ -33,9 +36,9 @@ else
 fi
 echo "HAS_NVLINK: $HAS_NVLINK (detected $NVLINK_COUNT NVLink references)"
 
-source "/home/rs63759/code/spec/Trajectory-Conditioned-Speculative-Decoding/scripts/models/mimo-7B-rl.sh"
+source "/home/ubuntu/code/Trajectory-Conditioned-Speculative-Decoding/scripts/models/mimo-7B-rl.sh"
 
-BASE=/home/rs63759/code/spec
+BASE=/home/ubuntu/code
 
 CKPT_ARGS=(
    --hf-checkpoint ${BASE}/models/MiMo-7B-RL
@@ -53,7 +56,7 @@ ROLLOUT_ARGS=(
    --rollout-shuffle
    --rm-type deepscaler
    --num-rollout 3000
-   --rollout-batch-size 8
+   --rollout-batch-size 32
    --n-samples-per-prompt 4
    --rollout-max-response-len 8192
    --rollout-temperature 1
@@ -83,7 +86,7 @@ PERF_ARGS=(
    --recompute-num-layers 1
 
    --use-dynamic-batch-size
-   --max-tokens-per-gpu 9216
+   --max-tokens-per-gpu 1024
 )
 
 GRPO_ARGS=(
@@ -106,15 +109,16 @@ OPTIMIZER_ARGS=(
 )
 
 WANDB_ARGS=(
-   # --use-wandb
-   # --wandb-project miles-dev
-   # --wandb-group mimo-7B-rl-test
-   # --wandb-key ${WANDB_API_KEY}
+   --use-wandb
+   --wandb-project spec
+   --wandb-group mimo-7B-rl-test
+   --wandb-key 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
 )
 
 SGLANG_ARGS=(
    --rollout-num-gpus-per-engine 2
    --sglang-mem-fraction-static 0.6
+   --sglang-watchdog-timeout 3600
 
    # for speculative decoding
    --sglang-speculative-algorithm EAGLE
@@ -147,14 +151,14 @@ $RAY start --head --node-ip-address ${MASTER_ADDR} --num-gpus 4 --disable-usage-
 # Build the runtime environment JSON with proper variable substitution
 RUNTIME_ENV_JSON="{
   \"env_vars\": {
-    \"PYTHONPATH\": \"/home/rs63759/code/spec/Megatron-LM/\",
+    \"PYTHONPATH\": \"/home/ubuntu/code/Megatron-LM/\",
     \"CUDA_DEVICE_MAX_CONNECTIONS\": \"1\",
     \"NCCL_NVLS_ENABLE\": \"${HAS_NVLINK}\",
     \"RAY_memory_usage_threshold\": \"0.99\"
   }
 }"
 
-cd /home/rs63759/code/spec/Trajectory-Conditioned-Speculative-Decoding
+cd /home/ubuntu/code/Trajectory-Conditioned-Speculative-Decoding
 
 $RAY job submit --address="http://127.0.0.1:8265" \
    --runtime-env-json="${RUNTIME_ENV_JSON}" \
