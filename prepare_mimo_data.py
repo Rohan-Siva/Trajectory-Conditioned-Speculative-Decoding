@@ -7,11 +7,11 @@ import json
 import pandas as pd
 from pathlib import Path
 
-DAPO_PARQUET = "/home/rs63759/code/spec/data/dapo-math-17k/data/dapo-math-17k.parquet"
-DAPO_JSONL   = "/home/rs63759/code/spec/data/dapo-math-17k/dapo-math-17k.jsonl"
+DAPO_PARQUET = "/home/ubuntu/code/data/dapo-math-17k/data/dapo-math-17k.parquet"
+DAPO_JSONL   = "/home/ubuntu/code/data/dapo-math-17k/dapo-math-17k.jsonl"
 
-AIME_PARQUET = "/home/rs63759/code/spec/data/aime-2024/aime_2024_problems.parquet"
-AIME_JSONL   = "/home/rs63759/code/spec/data/aime-2024/aime-2024.jsonl"
+AIME_PARQUET = "/home/ubuntu/code/data/aime-2024/data/train-00000-of-00001.parquet"
+AIME_JSONL   = "/home/ubuntu/code/data/aime-2024/aime-2024.jsonl"
 
 # ── DAPO ──────────────────────────────────────────────────────────────────────
 print("Converting DAPO-Math-17k...")
@@ -43,9 +43,9 @@ AIME_SYSTEM = (
 with open(AIME_JSONL, "w") as f:
     for _, row in df.iterrows():
         prompt = [
-            {"role": "user", "content": AIME_SYSTEM + row["Problem"]}
+            {"role": "user", "content": AIME_SYSTEM + str(row["problem"])}
         ]
-        label = str(row["Answer"])
+        label = str(row["answer"])
         f.write(json.dumps({"prompt": prompt, "label": label}) + "\n")
 
 print(f"  Written to {AIME_JSONL}")
